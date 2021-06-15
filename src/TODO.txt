@@ -1,0 +1,13 @@
+NOTDO(armaganslmn): Add is_recursive and should_ignore options for PATHs.
+NOTDO(armaganslmn): Add ignore path capability.
+
+/*
+Some errors:
+b'PATH|Group-1 | D:\\\\ALL BOOKS-PAPERS\\Non-academic Documents-Books\\All Life is Problem Solving-Karl Popper(2001).pdf'
+b"[WinError 123] The filename, directory name, or volume label syntax is incorrect: ' D:\\\\\\\\ALL BOOKS-PAPERS\\\\Mind Food\\\\All Life is Problem Solving-Karl Popper(2001).pdf'"
+None
+
+Reading file names...
+WTF is this: D:\\\\\\\\
+
+*/
