@@ -1,4 +1,5 @@
 import os
+import hashlib
 
 
 def get_fpaths_recursively_from_folder(PATH):
@@ -56,4 +57,25 @@ def get_file_size_in_bytes(path):
         #print(s)
         print(get_exception_message(ex))
     """
+#
+
+
+def file_sha512_generator(size_to_read):
+    def func(file_path):
+        return file_sha512(file_path, size_to_read)
+    #
+    return func
+#
+
+
+def file_sha512(file_path, size_to_read):
+    hs = hashlib.sha512()
+    data = None
+    
+    with open(file_path, "rb") as in_fobj:
+        data = in_fobj.read(size_to_read)
+    #
+    
+    hs.update(data)
+    return hs.hexdigest()
 #

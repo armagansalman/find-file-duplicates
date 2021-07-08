@@ -4,6 +4,8 @@ TODO(armaganslmn): File path list input method is a csv file. Every row's last s
 TODO(armaganslmn): .csv that holds input paths has the character ';' as separator and '"' as quote character (the characters between single quotes).
 TODO(armaganslmn): .csv that holds input paths is named input_paths.csv
 TODO(armaganslmn): If directory path is given, list files recursively.
+TODO(armaganslmn): Filter files with size lower than X before processing.
+TODO(armaganslmn): Instead of making a list of all grouped paths after a pass, make a pass for every group individually???
 
 
 NOTDO(armaganslmn): Add is_recursive and should_ignore options for PATHs.

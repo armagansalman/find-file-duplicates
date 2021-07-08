@@ -21,6 +21,6 @@ if __name__ == "__main__":
     csvh.write_rows("out.csv", map(lambda x: [x], found_paths))
     #
     
-    res = core.separate_uniques_and_duplicates(found_paths, group_fun_sequence=[util.get_file_size_in_bytes])
+    res = core.separate_uniques_and_duplicates(found_paths, group_fun_sequence=[util.get_file_size_in_bytes, util.file_sha512_generator(size_to_read=64)])
     
     csvh.write_uniques_and_groups(out_csv_name="results.csv", uniques=res[0], groups=res[1])

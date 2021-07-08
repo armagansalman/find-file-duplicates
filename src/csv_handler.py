@@ -48,13 +48,13 @@ def write_rows(csv_name, row_iter):
 
 def write_uniques_and_groups(out_csv_name, uniques, groups):
     # uniques is an iterable of file paths. groups is a dictionary where values are paths and keys are some shared info of those paths.
-    unq_path_rows = map(lambda x: ["UNIQUE", x], uniques)
+    unq_path_rows = map(lambda x: ["PATH", "UNIQUE", x], uniques)
     
     group_rows = []
     for key in groups:
         group_rows.append(["{"])
         for path in groups[key]:
-            group_rows.append([key, path])
+            group_rows.append(["PATH", str(key), path])
         #
         group_rows.append(["}"])
     #
