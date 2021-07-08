@@ -20,11 +20,11 @@ def get_fpaths_recursively_from_folder(PATH):
 
 
 def get_fpaths_from_all_paths(paths_iter):
-    file_paths = []
+    file_paths = set()
     # TODO(armaganslmn): Handle if input is file.
     # TODO(armaganslmn): ??? Error handling.
     for path in paths_iter:
-        file_paths.extend( get_fpaths_recursively_from_folder(path) )
+        file_paths.update( get_fpaths_recursively_from_folder(path) )
     #
     return file_paths
 #

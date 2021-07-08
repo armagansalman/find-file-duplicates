@@ -1,4 +1,8 @@
+The aim of this project is to find exact files under different paths as fast as possible. The project must provide capabilities to do multiple passes with increasing accuracy (find different files more accurately).
+
 TODO(armaganslmn): File path list input method is a csv file. Every row's last string holds a path (directory or file).
+TODO(armaganslmn): .csv that holds input paths has the character ';' as separator and '"' as quote character (the characters between single quotes).
+TODO(armaganslmn): .csv that holds input paths is named input_paths.csv
 TODO(armaganslmn): If directory path is given, list files recursively.
 
 
