@@ -1,8 +1,12 @@
+TODO(armaganslmn): File path list input method is a csv file. Every row's last string holds a path (directory or file).
+TODO(armaganslmn): If directory path is given, list files recursively.
+TODO(armaganslmn): Option to scan non-recursively for given directories. List files under that folder only.
+
 NOTDO(armaganslmn): Add is_recursive and should_ignore options for PATHs.
 NOTDO(armaganslmn): Add ignore path capability.
 
 /*
-Some errors:
+Some old errors:
 b'PATH|Group-1 | D:\\\\ALL BOOKS-PAPERS\\Non-academic Documents-Books\\All Life is Problem Solving-Karl Popper(2001).pdf'
 b"[WinError 123] The filename, directory name, or volume label syntax is incorrect: ' D:\\\\\\\\ALL BOOKS-PAPERS\\\\Mind Food\\\\All Life is Problem Solving-Karl Popper(2001).pdf'"
 None

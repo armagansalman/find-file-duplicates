@@ -2,7 +2,7 @@
 TODO(armaganslmn): Log errors to a file. Don't print them.
 TODO(armaganslmn): How much time does it take to list all files in root path: "/"
 
-NOTDO(armaganslmn): Add is_recursive and should_ignore options for PATHs. NO!
+NOTDO(armaganslmn): Add is_recursive and should_ignore options for PATHs.
 NOTDO(armaganslmn): Add ignore path capability.
 
 1) Get paths
