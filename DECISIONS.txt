@@ -1,9 +1,10 @@
 TODO(armaganslmn): File path list input method is a csv file. Every row's last string holds a path (directory or file).
 TODO(armaganslmn): If directory path is given, list files recursively.
-TODO(armaganslmn): Option to scan non-recursively for given directories. List files under that folder only.
+
 
 NOTDO(armaganslmn): Add is_recursive and should_ignore options for PATHs.
 NOTDO(armaganslmn): Add ignore path capability.
+
 
 /*
 Some old errors:
