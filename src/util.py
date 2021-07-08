@@ -29,3 +29,31 @@ def get_fpaths_from_all_paths(paths_iter):
     return file_paths
 #
 
+
+def get_exception_message(exception_obj):
+    # Just print(e) is cleaner and more likely what you want,
+    # but if you insist on printing message specifically whenever possible...
+    e = exception_obj
+    # TODO(armaganslmn): Don't return encoded. Just return as-is
+    if hasattr(e, 'message'):
+        return e.message.encode("utf-8")
+    else:
+        return str(e).encode("utf-8")
+#
+
+
+def get_file_size_in_bytes(path):
+    statinfo = os.stat(path)
+    return statinfo.st_size
+    """
+    try:  # TODO(armaganslmn): Don't use try-except here. Use where it's called.
+        statinfo = os.stat(path)
+        return statinfo.st_size
+        
+    except Exception as ex:
+        #s = "Error on path: {}".format(path)
+        #s.encode("utf-8")
+        #print(s)
+        print(get_exception_message(ex))
+    """
+#
