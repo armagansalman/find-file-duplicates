@@ -1,3 +1,0 @@
-for path "/", it took:
-Start: 2021-04-20-19-01-51
-Walked over all files. 2021-04-20-19-05-33
