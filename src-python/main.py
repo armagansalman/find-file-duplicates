@@ -3,7 +3,7 @@
     armaganymmt-prj-1_name processes files from different kinds of
     locations to find duplicate files.>
     
-    Copyright (C) <2021>  <Armağan Salman> <gmail,protonmail: armagansalman>
+    Copyright (C) <2021-2022>  <Armağan Salman> <gmail,protonmail: armagansalman>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,9 +29,7 @@
 # TODO(armagan): For printing paths, split filename, write filename first.
 # then write its path.
 
-# TODO(armagan): Create hash,set(paths) groups. Traverse them in DFS and
-# repeat the process. Recursively apply the process on every group until
-# either 1 file remains or a condition is met.
+# TODO(armagan): Create a shared parameter for grouper functions. Pass it to apply_multiple_groupers function. Inside that, use that shared area to communicate between groupers. ?Make the parameter a list of dictionaries?
 
 
 import time
@@ -105,15 +103,15 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
     string_seq.extend( ["Using size filter. Size(bytes)=", SMALLEST_SIZE] )
     string_seq.append('\n')
     
-    locations: Set[str] = set(filter(flt_size, fls_unfiltered))
+    #locations: Set[str] = set(filter(flt_size, fls_unfiltered))
     
     # fls: Set[str] = UT.get_nonzero_length_files(IN_PATHS)
     
-    string_seq.extend( ["Total number of files to search=", len(locations)] )
+    string_seq.extend( ["Total number of files to search=", len(fls_unfiltered)] )
     string_seq.append('\n')
     
 
-    fsinfo = FilesInfo(locations, UT.local_file_reader, \
+    fsinfo = FilesInfo(fls_unfiltered, UT.local_file_reader, \
                         UT.get_local_file_size)
 
     FINDX = FileIndexer([fsinfo])
@@ -133,17 +131,24 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
         , GRPR.sha512_first_X_bytes(X=hs[1]) ]
         # , GRPR.sha512_first_X_bytes(X=hs[2]) ]
     
+    size_grpr_param = {"minimum_file_size": SMALLEST_FSIZE}
+    initial_param = [size_grpr_param]
+    
+    
     string_seq.extend( [ "Groupers=size,{}-hash,{}-hash".format(hs[0],hs[1]) ] )
     string_seq.append('\n')
     
     found_groups_and_extras: Tuple[LocationGroups_t, List] = FINDER.apply_multiple_groupers(\
-                                    all_indices, grouper_funcs)
+                                    all_indices, grouper_funcs, shared_mem=initial_param)
     
     found_groups: LocationGroups_t = found_groups_and_extras[0]
     extra_datas: List = found_groups_and_extras[1]
     
+    # print(extra_datas)
+    # return -1
+    
     if len(extra_datas) > 1:
-        size_data = extra_datas[0]
+        size_data = extra_datas[1]["id_to_size_map"]
     else:
         size_data = dict()
     """
@@ -248,8 +253,6 @@ def trials(trial_count: int, search_paths: List[str]):
         
         # _search_paths = ["/media/genel/Bare-Data/"]
         
-        # TODO(armagan): Separate apply func. and write to file.
-        # TODO(armagan): Create LocalFileFinder
         # TODO(armagan): Combine 1 byte size filter and size grouper for performance.
         
         main_4(OUTFILE_PATH, search_paths, smallest_file_size)
@@ -278,7 +281,7 @@ def group_local_files(IN_PATHS: List[str], \
     all_indices: Set[int] = FINDER.get_file_indexer().get_all_indices()
     
     result: Tuple[LocationGroups_t,List] = FINDER.apply_multiple_groupers( \
-                                    all_indices, GROUP_FUNCS)
+                                    all_indices, GROUP_FUNCS, [])
     #
     found_groups = result[0]
     extra_datas: List = result[1]
@@ -341,7 +344,7 @@ if __name__ == "__main__":
     # search_paths = ["C:\\"]
     
     # trials(3, search_paths) # for performance measurement of cold/hot data.
-    
-    trials(1, search_paths) # 1 == Just to find local duplicates. More than 1 == repeats the search.
+    trial_cnt = 5
+    trials(trial_cnt, search_paths) # 1 == Just to find local duplicates. More than 1 == repeats the search.
 #
 

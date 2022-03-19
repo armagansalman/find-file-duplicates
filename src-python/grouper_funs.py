@@ -27,8 +27,10 @@ from classes import *
 def group_by_size(FIDX: FileIndexer, LOCS: LocationIndices_t, \
                     params: Any) -> GrouperReturn_t:
     # TODO(armagan): Combine size filter and group in one grouper for speed.
+    
     size_groups: Dict[int, Set[int]] = dict()
     id_to_size = dict()
+    
     for IDX in LOCS:
         LOC = FIDX.get_location(IDX)
         SFUN = FIDX.get_size_func(IDX)
@@ -38,7 +40,12 @@ def group_by_size(FIDX: FileIndexer, LOCS: LocationIndices_t, \
         if is_nothing(SIZE):
             continue
         #
+        
         sz: int = extract_some(SIZE)
+        
+        if sz < params["minimum_file_size"]:
+            continue # Skip small files.
+        #
         
         # Group location indices which have the same size. Create group if not exists:
         group: Set[int] = size_groups.get(sz, set())
@@ -53,7 +60,7 @@ def group_by_size(FIDX: FileIndexer, LOCS: LocationIndices_t, \
         res.append(val)
     #
     
-    return (res, id_to_size)
+    return (res, {"id_to_size_map": id_to_size})
 #
 
 
