@@ -3,7 +3,7 @@
     armaganymmt-prj-1_name processes files from different kinds of
     locations to find duplicate files.>
     
-    Copyright (C) <2021>  <Armağan Salman> <gmail,protonmail: armagansalman>
+    Copyright (C) <2021-2022>  <Armağan Salman> <gmail,protonmail: armagansalman>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -43,33 +43,41 @@ from typing import TypeVar
 LocationIndices_t = Set[int]
 LocationGroups_t = Iter_t[LocationIndices_t]
 
+GrouperReturn_t = Tuple[LocationGroups_t, Dict[Any,Any]]
 # Iterable_t = Iter_t
 
-Maybe = Tuple[bool, Any]
-MaybeInt = Tuple[bool, int]
+
+
+"""
+    Maybe type.
+    Implemented as a tuple. For a maybe M, if the first element is None, M is nothing and the value it holds is invalid/meaningless. Else, the data is valid and can be extracted.
+"""
+Maybe = Tuple[Any, Any]
+MaybeInt = Tuple[Any, int]
+
+class InvalidValueError(BaseException):
+    pass
+#
 
 def make_some(data: Any) -> Maybe:
     return (True, data)
 #
 
-
 def make_nothing() -> Maybe:
-    return (False, False) # Second field is unimportant
+    return (None, None) # Second field is unimportant
 #
-
-
-def is_some(arg: Maybe) -> bool:
-    return arg[0] == True
-#
-
 
 def is_nothing(arg: Maybe) -> bool:
-    return arg[0]  == False
+    return arg[0]  == None
 #
 
-
-def get_data(arg: Maybe) -> Any:
-    return arg[1]
+def is_some(arg: Maybe) -> bool:
+    return not is_nothing(arg)
 #
 
-
+def extract_some(arg: Maybe) -> Any:
+    if is_some(arg):
+        return arg[1]
+    else:
+        raise InvalidValueError("Given argument is nothing. Can't extract data from a nothing.")
+#

@@ -3,7 +3,7 @@
     armaganymmt-prj-1_name processes files from different kinds of
     locations to find duplicate files.>
     
-    Copyright (C) <2021>  <Armağan Salman> <gmail,protonmail: armagansalman>
+    Copyright (C) <2021-2022>  <Armağan Salman> <gmail,protonmail: armagansalman>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,9 +25,10 @@ from classes import *
 
 
 def group_by_size(FIDX: FileIndexer, LOCS: LocationIndices_t, \
-                    PERC: MatchPercentage_t) -> LocationGroups_t:
-    
+                    params: Any) -> GrouperReturn_t:
+    # TODO(armagan): Combine size filter and group in one grouper for speed.
     size_groups: Dict[int, Set[int]] = dict()
+    id_to_size = dict()
     for IDX in LOCS:
         LOC = FIDX.get_location(IDX)
         SFUN = FIDX.get_size_func(IDX)
@@ -37,12 +38,14 @@ def group_by_size(FIDX: FileIndexer, LOCS: LocationIndices_t, \
         if is_nothing(SIZE):
             continue
         #
-        sz: int = get_data(SIZE)
+        sz: int = extract_some(SIZE)
         
-        # Group location indices which have the same size:
+        # Group location indices which have the same size. Create group if not exists:
         group: Set[int] = size_groups.get(sz, set())
         group.add(IDX)
         size_groups[sz] = group
+        
+        id_to_size[IDX] = sz
     #
     
     res: List[Set[int]] = list()
@@ -50,14 +53,14 @@ def group_by_size(FIDX: FileIndexer, LOCS: LocationIndices_t, \
         res.append(val)
     #
     
-    return res
+    return (res, id_to_size)
 #
 
 
 def sha512_first_X_bytes(X: int) -> GroupFunc_t:
     #
     def grouper(FIDX: FileIndexer, LOCS: LocationIndices_t, \
-                    PERC: MatchPercentage_t) -> LocationGroups_t:
+                    params: Any) -> GrouperReturn_t:
         #
         hash_groups: Dict[int, Set[int]] = dict()
         
@@ -70,7 +73,7 @@ def sha512_first_X_bytes(X: int) -> GroupFunc_t:
             if is_nothing(FIRST_X_BYTES):
                 continue
             #
-            data: bytes = get_data(FIRST_X_BYTES)
+            data: bytes = extract_some(FIRST_X_BYTES)
             
             hex_hash = UT.sha512_bytes(data)
             
@@ -83,8 +86,9 @@ def sha512_first_X_bytes(X: int) -> GroupFunc_t:
         for key, val in hash_groups.items():
             res.append(val)
         #
+        accumulated_dict: Dict[Any,Any] = dict()
         
-        return res
+        return (res, accumulated_dict)
     #
     
     return grouper
@@ -97,11 +101,12 @@ def sha512_first_X_bytes(X: int) -> GroupFunc_t:
 
 def make_filter_group_by_size(low: MaybeInt, high: MaybeInt) \
         -> GroupFunc_t:
-    #
+    # Creates size grouper functions.
+    # TODO(armagan): Complete this function. (2022-03-14)
     def filter_group_by_size(FIDX: FileIndexer, LOCS: LocationIndices_t, \
-            PERC: MatchPercentage_t) -> LocationGroups_t:
+            params: Any) -> GrouperReturn_t:
         # 4 cases for low,high = 0,0;0,1;1,0;1,1
-        return None
+        return ([{1,2,3}], dict())
     #
     
     return filter_group_by_size

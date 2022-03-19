@@ -50,14 +50,15 @@ def get_path_basename(PATH: str):
 def get_fpaths_recursively_from_folder(PATH: str):
     rec_files: Set = set()
     # TODO(armaganslmn): ??? Error handling.
+    ap = os.path.abspath(PATH)
     
-    if os.path.isfile(PATH):
-        rec_files.add(PATH)
+    if os.path.isfile(ap):
+        rec_files.add(ap)
         return rec_files
     #
     
-    elif os.path.isdir(PATH):
-        for root, dirs, files in os.walk(PATH):
+    elif os.path.isdir(ap):
+        for root, dirs, files in os.walk(ap):
             for name in files:
                 p = os.path.join(root, name)
                 rec_files.add(os.path.abspath(p))
@@ -111,7 +112,7 @@ def get_nonzero_length_files(paths_arg: List[str]):
             if is_nothing(sz):
                 continue
             #
-            if get_data(sz) >= 1:
+            if extract_some(sz) >= 1:
                 paths.add(p)
         except: # TODO(armagan): Report/except when exception occurs.
             pass

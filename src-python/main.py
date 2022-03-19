@@ -50,6 +50,7 @@ import grouper_funs as GRPR
 
 #@profile
 def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
+    # TODO(armagan): Use params Dict of size grouper to both filter and group.
     string_seq: List = []
     
     string_seq.extend( ["======= filedups-main-4 function begining ======= "] )
@@ -77,6 +78,12 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
     
     fls_unfiltered: Set[str] = UT.get_fpaths_from_path_iter(IN_PATHS)
     
+    if len(fls_unfiltered) < 2:
+        string_seq.append("Can't find files for given paths. Try giving absolute paths.")
+        stringified = map(str, string_seq)
+        UT.append_file_text_utf8(out_fpath, ' '.join(stringified))
+        return None
+    
     SMALLEST_SIZE: int = SMALLEST_FSIZE
     
     def flt_size(path: str):
@@ -86,7 +93,7 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
             if is_nothing(sz):
                 return False
             #
-            if get_data(sz) >= SMALLEST_SIZE:
+            if extract_some(sz) >= SMALLEST_SIZE:
                 return True
             #
             return False
@@ -115,20 +122,30 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
     FINDER: DuplicateFinder = DuplicateFinder(FINDX, 0.5)
     all_indices: Set[int] = FINDER.get_file_indexer().get_all_indices()
     
-    hs1 = 512
-    hs2 = 4 * CONST.xKB
+    hash_size_1 = 512 * CONST.xBYTE
+    hash_size_2 = 64 * CONST.xKB
+    hash_size_3 = 1 * CONST.xMB
+    
+    hs = [hash_size_1, hash_size_2, hash_size_3]
     
     grouper_funcs: List[GroupFunc_t] = [ GRPR.group_by_size \
-     , GRPR.sha512_first_X_bytes(X=hs1) \
-     , GRPR.sha512_first_X_bytes(X=hs2) ]
+        , GRPR.sha512_first_X_bytes(X=hs[0]) \
+        , GRPR.sha512_first_X_bytes(X=hs[1]) ]
+        # , GRPR.sha512_first_X_bytes(X=hs[2]) ]
     
-    string_seq.extend( ["Groupers=size,{}-hash,{}-hash".format(hs1,hs2)] )
+    string_seq.extend( [ "Groupers=size,{}-hash,{}-hash".format(hs[0],hs[1]) ] )
     string_seq.append('\n')
     
-    found_groups: LocationGroups_t = FINDER.apply_multiple_groupers(\
+    found_groups_and_extras: Tuple[LocationGroups_t, List] = FINDER.apply_multiple_groupers(\
                                     all_indices, grouper_funcs)
     
+    found_groups: LocationGroups_t = found_groups_and_extras[0]
+    extra_datas: List = found_groups_and_extras[1]
     
+    if len(extra_datas) > 1:
+        size_data = extra_datas[0]
+    else:
+        size_data = dict()
     """
     size_group: LocationGroups_t = FINDER.apply_one_grouper(all_indices,\
                                                         GRPR.group_by_size)
@@ -149,9 +166,19 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
             # ??https://github.com/tobgu/pyrsistent
             
             loc = FINDER.get_file_indexer().get_location(loc_idx)
-            string_seq.extend( ["File path:", loc])
+            
+            sz = -1
+            if len(size_data) > 1:
+                sz = size_data[loc_idx]
+            
+            
+            
+            string_seq.extend( [ "-> File path:", loc ])
             string_seq.append('\n')
-            string_seq.extend( [">>> File name:", UT.get_path_basename(loc)])
+            string_seq.extend( [ "-> File name:", UT.get_path_basename(loc) ] )
+            string_seq.append('\n')
+            string_seq.extend( [ "-> File size:", sz, " bytes. ", int(sz/1024), " kilobytes." ])
+            string_seq.extend( [ "{:.2f}".format(sz/(1024*1024)), " megabytes."  ])
             string_seq.append('\n')
             string_seq.append('\n')
         #
@@ -175,16 +202,11 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
     indices: List[int] = FINDX.get_all_indices()
     
     #print(len(indices))
-    string_seq.extend( [len(indices)] )
+    string_seq.extend( ["Processed ", len(indices), " files."] )
     string_seq.append('\n')
     
-    #print(indices[:7])
-    #string_seq.extend([indices[:7]])
-    
-    #print("***************************************")
     string_seq.extend( ["**********************************************************************"] )
     string_seq.append('\n')
-    
     
     
     stringified = map(str, string_seq)
@@ -197,7 +219,7 @@ def trials(trial_count: int, search_paths: List[str]):
     NOW = UT.get_now_str()
 
     for i in range(trial_count):
-        smallest_file_size: int = 1 * CONST.xBYTE
+        smallest_file_size: int = 500 * CONST.xKB # 1.44 MB = some floppy disc capacity
         
         OUTFILE_PATH = "{}_at least({} bytes).txt".format(NOW, smallest_file_size)
 
@@ -237,26 +259,11 @@ def trials(trial_count: int, search_paths: List[str]):
     350871 items, totalling 759,9 GiB (815.983.211.147 bytes) = ext-disk,NOT SAM
     """
 
-    """
-    At least 1 byte size filter.
-    Groupers=size,512-hash,8192-hash
-    ELAPSED: 56.87620095499733 seconds. 
-     17354 files.
-     ~300 files/second
-    """
-
-    """
-    At least 1 byte size filter.
-    Groupers=size,512-hash,8192-hash 
-     ELAPSED: 115.64341640401108 seconds. 
-     29288 
-     ~250 files/second
-    """
 #
 
 
 def group_local_files(IN_PATHS: List[str], \
-        GROUP_FUNCS: List[GroupFunc_t]) -> LocationGroups_t:
+        GROUP_FUNCS: List[GroupFunc_t]) -> Tuple[LocationGroups_t,List]:
     # TODO(armagan): ??? Make this a separate class.
     
     paths_unfiltered: Set[str] = UT.get_fpaths_from_path_iter(IN_PATHS)
@@ -270,10 +277,13 @@ def group_local_files(IN_PATHS: List[str], \
     
     all_indices: Set[int] = FINDER.get_file_indexer().get_all_indices()
     
-    found_groups: LocationGroups_t = FINDER.apply_multiple_groupers( \
+    result: Tuple[LocationGroups_t,List] = FINDER.apply_multiple_groupers( \
                                     all_indices, GROUP_FUNCS)
     #
-    return found_groups
+    found_groups = result[0]
+    extra_datas: List = result[1]
+    
+    return result
 #
 
 
@@ -319,14 +329,19 @@ if __name__ == "__main__":
         , "/media/genel/Bare-Data/Program Files/"]
     #
     
-    search_paths_WIN10 = ["D:\ALL BOOKS-PAPERS" \
-        , "D:\Documents" \
-        , "D:\HxD" \
-        , "D:\Program Files"]
+    search_paths_WIN10 = [r"D:\ALL BOOKS-PAPERS" \
+        , r"D:\Documents" \
+        , r"D:\HxD" \
+        , r"D:\Program Files"]
     #
     
-    search_paths = ["D:\\"] # or "D:/"
+    search_paths = [r"D:\ALL BOOKS-PAPERS"] # or "D:/"
+    search_paths = ["D:\\"]
+    # search_paths = ["C:\Program Files"]
+    # search_paths = ["C:\\"]
+    
     # trials(3, search_paths) # for performance measurement of cold/hot data.
-    trials(1, search_paths) # 1 == Just to find local duplicates.
+    
+    trials(1, search_paths) # 1 == Just to find local duplicates. More than 1 == repeats the search.
 #
 

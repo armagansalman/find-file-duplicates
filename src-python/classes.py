@@ -169,7 +169,7 @@ class FileIndexer:
 # Some type definitions:
 MatchPercentage_t = float
 GroupFunc_t = Callable[[FileIndexer, LocationIndices_t, \
-                        MatchPercentage_t], LocationGroups_t]
+                        Dict], GrouperReturn_t]
 
 
 class DuplicateFinder:
@@ -186,36 +186,47 @@ class DuplicateFinder:
     
     
     def apply_one_grouper(self, LOCS: LocationIndices_t, \
-                        FUNC: GroupFunc_t) -> LocationGroups_t:
+                        FUNC: GroupFunc_t) -> GrouperReturn_t:
         #
-        locs: LocationGroups_t = FUNC(self.FIDX, LOCS, \
-                                            self.SIMILARITY)
-        return locs
+        
+        res = FUNC(self.FIDX, LOCS, {"similarity":self.SIMILARITY})
+        locs: LocationGroups_t = res[0]
+        extra_data: Dict[Any,Any] = res[1]
+        
+        return (locs, extra_data)
     #
     
     
     def rec_apply(self, LOCS: LocationIndices_t, FUNC_IDX: int, \
-                    GROUPERS: List[GroupFunc_t]) -> LocationGroups_t:
+                    GROUPERS: List[GroupFunc_t], data_holder: List) -> LocationGroups_t:
         #
         locs: Set[int] = set(LOCS)
         if len(locs) < 2: # Fewer than 2 files can't be duplicates.
             return [locs]
         #
         
-        if FUNC_IDX >= len(GROUPERS): # No grouper func. left to apply.
+        if FUNC_IDX >= len(GROUPERS): # No grouper function left to apply.
             return [locs]
         #
         
-        loc_groups: LocationGroups_t = self.apply_one_grouper(locs,\
+        groups_plus_extras: GrouperReturn_t = self.apply_one_grouper(locs,\
                                                     GROUPERS[FUNC_IDX])
         #
+        
+        loc_groups = groups_plus_extras[0]
+        extra_data: Dict[Any,Any] = groups_plus_extras[1]
+        
+        data_holder.append(extra_data) # Changes parameter. Dirty workaround.
+        
+        # acc: List[Any] = []
+        # acc.append(extra_data)
         
         NEXT_FUNC_IDX = FUNC_IDX + 1
         combined_groups: List[LocationIndices_t] = []
         
         for grp in loc_groups:
             sub_grp_result: LocationGroups_t = self.rec_apply(grp, \
-                                                NEXT_FUNC_IDX, GROUPERS)
+                                                NEXT_FUNC_IDX, GROUPERS, data_holder)
             #
             for sub_grp in sub_grp_result:
                 combined_groups.append(sub_grp)
@@ -227,13 +238,14 @@ class DuplicateFinder:
     
     
     def apply_multiple_groupers(self, LOCS: LocationIndices_t, \
-                    GROUPERS: List[GroupFunc_t]) -> LocationGroups_t:
+                    GROUPERS: List[GroupFunc_t]) -> Tuple[LocationGroups_t,List[Any]]:
         # TODO(armagan): ???User MUST ??? match percentage.
         GROUPER_FUNC_IDX = 0
+        accumulator_mut: List = []
         result_groups: LocationGroups_t = self.rec_apply(LOCS, \
-                                            GROUPER_FUNC_IDX, GROUPERS)
+                                            GROUPER_FUNC_IDX, GROUPERS, accumulator_mut)
         #
-        return result_groups
+        return (result_groups, accumulator_mut)
     #
     
 #
