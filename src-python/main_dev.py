@@ -32,13 +32,13 @@
 # TODO(armagan): Create a shared parameter for grouper functions. Pass it to apply_multiple_groupers function. Inside that, use that shared area to communicate between groupers. ?Make the parameter a list of dictionaries?
 
 
-import time as OS_TIME
+import time
 
 # Callable[[ParamType1, ParamType2, .., ParamTypeN], ReturnType]
 from common_types import *
 import constants as CONST
 from classes import *
-import util as UTIL
+import util as UT
 import grouper_funs as GRPR
 
 
@@ -54,16 +54,16 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
     string_seq.extend( ["======= filedups-main-4 function begining ======= "] )
     string_seq.append('\n')
     
-    now_str = UTIL.get_now_str()
+    now_str = UT.get_now_str()
     
-    string_seq.extend( ["Start date OS_TIME ISO-8601 = {}".format(now_str)] )
+    string_seq.extend( ["Start datetime ISO-8601 = {}".format(now_str)] )
     string_seq.append('\n')
     
     string_seq.append("Paths: ")
     string_seq.extend( IN_PATHS )
     string_seq.append('\n')
     
-    TM_beg = OS_TIME.perf_counter()
+    TM_beg = time.perf_counter()
     
     #print("HASH_BYTES=", HASH_BYTES)
 
@@ -74,39 +74,50 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
     string_seq.append('\n')
 
     
-    fls_unfiltered: Set[str] = UTIL.get_fpaths_from_path_iter(IN_PATHS)
+    fls_unfiltered: Set[str] = UT.get_fpaths_from_path_iter(IN_PATHS)
     
     if len(fls_unfiltered) < 2:
         string_seq.append("Can't find files for given paths. Try giving absolute paths.")
-        
         stringified = map(str, string_seq)
-        
-        UTIL.append_file_text_utf8(out_fpath, ' '.join(stringified))
-        
+        UT.append_file_text_utf8(out_fpath, ' '.join(stringified))
         return None
-    #
     
     SMALLEST_SIZE: int = SMALLEST_FSIZE
     
+    def flt_size(path: str):
+        #
+        try:
+            sz: MaybeInt = UT.get_file_size_in_bytes(path)
+            if is_nothing(sz):
+                return False
+            #
+            if extract_some(sz) >= SMALLEST_SIZE:
+                return True
+            #
+            return False
+        #
+        except: # TODO(armagan): Report/except when exception occurs.
+            return False
+    #
     
     #string_seq.extend( ["Using size filter. Size(bytes)=", SMALLEST_SIZE] )
     #string_seq.append('\n')
     
     #locations: Set[str] = set(filter(flt_size, fls_unfiltered))
     
-    # fls: Set[str] = UTIL.get_nonzero_length_files(IN_PATHS)
+    # fls: Set[str] = UT.get_nonzero_length_files(IN_PATHS)
     
     string_seq.extend( ["Total number of files to search=", len(fls_unfiltered)] )
     string_seq.append('\n')
     
 
-    fsinfo = FilesInfo(fls_unfiltered, UTIL.local_file_reader, \
-                        UTIL.get_local_file_size)
+    fsinfo = FilesInfo(fls_unfiltered, UT.local_file_reader, \
+                        UT.get_local_file_size)
 
     FINDX = FileIndexer([fsinfo])
     
     # TODO(armagan): Use DuplicateFinder class and group function(s).
-    FINDER: DuplicateFinder = DuplicateFinder(FINDX)
+    FINDER: DuplicateFinder = DuplicateFinder(FINDX, 0.5)
     all_indices: Set[int] = FINDER.get_file_indexer().get_all_indices()
     
     hash_size_1 = 512 * CONST.xBYTE
@@ -170,7 +181,7 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
             
             string_seq.extend( [ "---> File path:", loc ])
             string_seq.append('\n')
-            string_seq.extend( [ "-> File name:", UTIL.get_path_basename(loc) ] )
+            string_seq.extend( [ "-> File name:", UT.get_path_basename(loc) ] )
             string_seq.append('\n')
             if sz > 0:
                 string_seq.extend( [ "-> File size:", sz, " bytes. ", int(sz/1024), " kilobytes." ])
@@ -184,11 +195,11 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
         i += 1
     #
     """"""
-    TM_end = OS_TIME.perf_counter()
+    TM_end = time.perf_counter()
 
     #print("ELAPSED:",TM_end - TM_beg)
     
-    string_seq.extend( ["End dateOS_TIME ISO-8601 = {}".format(UTIL.get_now_str())] )
+    string_seq.extend( ["End datetime ISO-8601 = {}".format(UT.get_now_str())] )
     string_seq.append('\n')
     
     string_seq.extend( ["ELAPSED:",TM_end - TM_beg, "seconds."] )
@@ -206,26 +217,77 @@ def main_4(out_fpath, IN_PATHS: List[str], SMALLEST_FSIZE):
     
     stringified = map(str, string_seq)
     
-    UTIL.append_file_text_utf8(out_fpath, ' '.join(stringified))
+    UT.append_file_text_utf8(out_fpath, ' '.join(stringified))
 #
 
 
 def trials(trial_count: int, search_paths: List[str]):
-    NOW = UTIL.get_now_str()
+    NOW = UT.get_now_str()
 
     for i in range(trial_count):
         smallest_file_size: int = 500 * CONST.xKB # 1.44 MB = some floppy disc capacity
         
-        fsize_kb_str = f"{smallest_file_size/1024:.1f}"
+        OUTFILE_PATH = "{}_at least({} bytes).txt".format(NOW, smallest_file_size)
+
+        #search_paths_WINDOWS = ["D:\ALL BOOKS-PAPERS", "D:\Documents", "D:\HxD", "D:\Program Files"]
+
+        """
+        _search_paths_MINT = ["/media/genel/Bare-Data/ALL BOOKS-PAPERS/" \
+        , "/media/genel/Bare-Data/Documents/" \
+        , "/media/genel/Bare-Data/HxD/" \
+        , "/media/genel/Bare-Data/Program Files/"]
+        """
         
-        OUTFILE_PATH = "{}-Groups-fsize at least {} Kbytes.txt".format(NOW, fsize_kb_str)
+        """
+        _search_paths = ["/media/genel/SAMSUNG/NOT SAMS/Anime-Cartoon-Manga/" \
+        , "/media/genel/SAMSUNG/NOT SAMS/Anime-Cartoon-Manga/" \
+        , "/media/genel/SAMSUNG/NOT SAMS/Aile fotolar, videolar/" \
+        , "/media/genel/SAMSUNG/NOT SAMS/Aile family/"]
+        # search_paths_MINT = "/media/genel/SAMSUNG/NOT SAMS/Alltxt files/"
+        """
         
-        funcs = {"main_4":main_4}
-        fname = "main_4"
-        print("\n[ INFO ] NEW TRIAL ; function:{} ; Trial={}".format(fname, i))
+        # _search_paths_MINT = ["/media/genel/Bare-Data/"]
         
-        funcs[fname](OUTFILE_PATH, search_paths, smallest_file_size)
+        # _search_paths_MINT = ["/home/genel/"]
+        
+        # _search_paths = ["/home/genel/"]
+        
+        # _search_paths = ["/media/genel/Bare-Data/"]
+        
+        # TODO(armagan): Combine 1 byte size filter and size grouper for performance.
+        
+        main_4(OUTFILE_PATH, search_paths, smallest_file_size)
     #
+
+    """
+    350871 items, totalling 759,9 GiB (815.983.211.147 bytes) = ext-disk,NOT SAM
+    """
+
+#
+
+
+def group_local_files(IN_PATHS: List[str], \
+        GROUP_FUNCS: List[GroupFunc_t]) -> Tuple[LocationGroups_t,List]:
+    # TODO(armagan): ??? Make this a separate class.
+    
+    paths_unfiltered: Set[str] = UT.get_fpaths_from_path_iter(IN_PATHS)
+    
+    fsinfo = FilesInfo(paths_unfiltered, UT.local_file_reader, \
+                        UT.get_local_file_size)
+    #
+    FINDX = FileIndexer([fsinfo])
+    
+    FINDER: DuplicateFinder = DuplicateFinder(FINDX, 0.5)
+    
+    all_indices: Set[int] = FINDER.get_file_indexer().get_all_indices()
+    
+    result: Tuple[LocationGroups_t,List] = FINDER.apply_multiple_groupers( \
+                                    all_indices, GROUP_FUNCS, [])
+    #
+    found_groups = result[0]
+    extra_datas: List = result[1]
+    
+    return result
 #
 
 
@@ -239,15 +301,14 @@ def local_grouper_main(IN_PATHS: List[str]):
         , GRPR.sha512_first_X_bytes(X=hs1) \
         , GRPR.sha512_first_X_bytes(X=hs2) ]
     #
-    
     string_seq: List = []
     
     string_seq.extend( ["======= filedups local_grouper_main beginning ======= "] )
     string_seq.append('\n')
     
-    now_str = UTIL.get_now_str()
+    now_str = UT.get_now_str()
     
-    string_seq.extend( ["Start dateOS_TIME ISO-8601 = {}".format(now_str)] )
+    string_seq.extend( ["Start datetime ISO-8601 = {}".format(now_str)] )
     string_seq.append('\n')
     
     string_seq.append("Paths: ")
@@ -257,50 +318,35 @@ def local_grouper_main(IN_PATHS: List[str]):
     string_seq.extend( ["SMALLEST_FSIZE(bytes)=", SMALLEST_FSIZE] )
     string_seq.append('\n')
     
-    TM_beg = OS_TIME.perf_counter()
+    TM_beg = time.perf_counter()
     
     # TODO(armagan): Continue writing this function.
     
 #
 
-def current_main(trial_cnt = 1):
-    #
-    """
+
+if __name__ == "__main__":
+    # 
     search_paths_MINT = ["/media/genel/Bare-Data/ALL BOOKS-PAPERS/" \
         , "/media/genel/Bare-Data/Documents/" \
         , "/media/genel/Bare-Data/HxD/" \
         , "/media/genel/Bare-Data/Program Files/"]
     #
-    """
     
-    """
     search_paths_WIN10 = [r"D:\ALL BOOKS-PAPERS" \
         , r"D:\Documents" \
         , r"D:\HxD" \
         , r"D:\Program Files"]
     #
-    """
     
-    #search_paths = [r"D:\ALL BOOKS-PAPERS"] # or "D:/"
-    
-    #search_paths = ["D:\\", "C:\\Program Files"]
-    
+    search_paths = [r"D:\ALL BOOKS-PAPERS"] # or "D:/"
     search_paths = ["D:\\"]
-    
-    #search_paths = ["C:\\Program Files"]
-    
     # search_paths = ["C:\Program Files"]
-    # search_paths = ["C:\\"]
+    search_paths = ["C:\\"]
     
     # trials(3, search_paths) # for performance measurement of cold/hot data.
-    
+    trial_cnt = 1
     
     trials(trial_cnt, search_paths) # 1 == Just to find local duplicates. More than 1 == repeats the search.
 #
 
-
-if __name__ == "__main__":
-    trial_count = 1
-    current_main(trial_count)
-    
-#

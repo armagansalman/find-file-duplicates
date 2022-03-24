@@ -3,7 +3,7 @@
     armaganymmt-prj-1_name processes files from different kinds of
     locations to find duplicate files.>
     
-    Copyright (C) <2021>  <Armağan Salman> <gmail,protonmail: armagansalman>
+    Copyright (C) <2021-2022>  <Armağan Salman> <gmail,protonmail: armagansalman>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -87,12 +87,9 @@ Design/Decisions/Definitions:
 from common_types import *
 
 
-StartIdx = int
-EndIdx = int
+def concat_data_with(data_list: list, concatenator: str):
+    return concatenator.join(map(str,data_list))
 
-Location = Any
-ReaderFunc = Callable[[Any, StartIdx, EndIdx], Tuple[bool, bytes]]
-SizeFunc = Callable[[Any], Tuple[bool, int]]
 
 class FilesInfo:
     def __init__(self, locations: Iter_t[Any] \
@@ -109,19 +106,18 @@ class FilesInfo:
 #
 
 
-# Type Definition:
-FileTriple = Tuple[Location, ReaderFunc, SizeFunc]
+
 
 class FileIndexer:
     def __init__(self, files_info_iter: Iter_t[FilesInfo]):
-        self.data: List[FileTriple] = list()
+        self.data: List[FileInfoTriple] = list()
         # data = [["path1", reader, size_getter], ["path2", ...,...]]
         for files_info in files_info_iter:
             reader: ReaderFunc = files_info.reader_func
             size_fun: SizeFunc = files_info.size_getter
             
             for loc in files_info.locations:
-                info: FileTriple = (loc, reader, size_fun)
+                info: FileInfoTriple = (loc, reader, size_fun)
                     
                 self.data.append(info)
             #
@@ -129,26 +125,26 @@ class FileIndexer:
     #
     
     
-    def get_file_info(self, idx: int) -> FileTriple:
-        info: FileTriple = self.data[idx]
+    def get_file_info(self, idx: int) -> FileInfoTriple:
+        info: FileInfoTriple = self.data[idx]
         return info
     #
     
     
     def get_location(self, idx: int) -> Location:
-        info: FileTriple = self.get_file_info(idx)
+        info: FileInfoTriple = self.get_file_info(idx)
         return info[0]
     #
     
     
     def get_reader(self, idx: int) -> ReaderFunc:
-        info: FileTriple = self.get_file_info(idx)
+        info: FileInfoTriple = self.get_file_info(idx)
         return info[1]
     #
     
     
     def get_size_func(self, idx: int) -> SizeFunc:
-        info: FileTriple = self.get_file_info(idx)
+        info: FileInfoTriple = self.get_file_info(idx)
         return info[2]
     #
     
@@ -173,35 +169,31 @@ GroupFunc_t = Callable[[FileIndexer, LocationIndices_t, \
 
 
 class DuplicateFinder:
-    def __init__(self, FILE_INDEXER: FileIndexer, \
-                SIMILARITY_PERCENTAGE: float):
+    def __init__(self, FILE_INDEXER: FileIndexer):
         self.FIDX = FILE_INDEXER
-        self.SIMILARITY = SIMILARITY_PERCENTAGE
-    #
-    
+    ##
     
     def get_file_indexer(self):
         return self.FIDX
-    #
-    
+    ##
     
     def apply_one_grouper(self, LOCS: LocationIndices_t, \
-                        FUNC: GroupFunc_t, FUNC_IDX) -> GrouperReturn_t:
+                        GFUNC: GroupFunc_t, iter_num:int) -> GrouperReturn_t:
         #
-        given = self.shared_mem[FUNC_IDX]
+        given_params = self.shared_mem[iter_num]
         
-        res = FUNC(self.FIDX, LOCS, given)
+        res = GFUNC(self.FIDX, LOCS, given_params)
         locs: LocationGroups_t = res[0]
         extra_data: Dict[Any,Any] = res[1]
         
         return (locs, extra_data)
-    #
-    
+    ##
     
     def rec_apply(self, LOCS: LocationIndices_t, FUNC_IDX: int, \
                     GROUPERS: List[GroupFunc_t]) -> LocationGroups_t:
         #
         locs: Set[int] = set(LOCS)
+        
         if len(locs) < 2: # Fewer than 2 files can't be duplicates.
             return [locs]
         #
@@ -216,16 +208,10 @@ class DuplicateFinder:
         #
         
         loc_groups = groups_plus_extras[0]
-        extra_data: Dict[Any,Any] = groups_plus_extras[1]
-        extra_data["FUNC_IDX"] =  FUNC_IDX
-        extra_data["mem_idx"] = self.mem_idx
-        #extra_data["loc_groups"] =  loc_groups
+        extras = groups_plus_extras[1]
         
-        # data_holder.append(extra_data) # Changes parameter. Dirty workaround.
-        self.shared_mem.append(extra_data)
-        self.mem_idx += 1
-        # acc: List[Any] = []
-        # acc.append(extra_data)
+        iter_dict = self.shared_mem[self.iteration]
+        
         
         NEXT_FUNC_IDX = FUNC_IDX + 1
         combined_groups: List[LocationIndices_t] = []
@@ -240,14 +226,21 @@ class DuplicateFinder:
         #
         
         return combined_groups
-    #
-    
+    ##
     
     def apply_multiple_groupers(self, LOCS: LocationIndices_t, \
                     GROUPERS: List[GroupFunc_t], shared_mem) -> Tuple[LocationGroups_t,List[Any]]:
         # TODO(armagan): ???User MUST ??? match percentage.
+        # TODO(armagan): Fix inter-grouper data sharing and make it fast.
+        # prms = shared_mem["params"]
+        # prms[0] == additional parameters for size grouper (first grouper)
         self.shared_mem = shared_mem
-        self.mem_idx = 0
+        self.iteration = 0
+        # "_".join(["iter",self.iteration])
+        #iter_key = concat_data_with(["iter",self.iteration], "_")
+        iter_key = "_".join( ["iter", str(self.iteration)] )
+        
+        self.shared_mem.append({iter_key:dict()})
         
         GROUPER_FUNC_IDX = 0
         
@@ -255,7 +248,7 @@ class DuplicateFinder:
                                             GROUPER_FUNC_IDX, GROUPERS)
         #
         return (result_groups, self.shared_mem)
-    #
+    ##
     
 #
 

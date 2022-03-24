@@ -32,9 +32,10 @@ def group_by_size(FIDX: FileIndexer, LOCS: LocationIndices_t, \
     id_to_size = dict()
     
     for IDX in LOCS:
-        LOC = FIDX.get_location(IDX)
-        SFUN = FIDX.get_size_func(IDX)
-        SIZE: Maybe = SFUN(LOC)
+        #LOC = FIDX.get_location(IDX)
+        #SFUN = FIDX.get_size_func(IDX)
+        LOC, READFUN, SIZEFUN = FIDX.get_file_info(IDX)
+        SIZE: Maybe = SIZEFUN(LOC)
         
         # TODO(armagan): Report/except when SIZE == None.
         if is_nothing(SIZE):

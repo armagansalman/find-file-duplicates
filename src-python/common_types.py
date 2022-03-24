@@ -47,6 +47,16 @@ GrouperReturn_t = Tuple[LocationGroups_t, Dict[Any,Any]]
 # Iterable_t = Iter_t
 
 
+StartIdx = int
+EndIdx = int
+
+Location = Any
+ReaderFunc = Callable[[Any, StartIdx, EndIdx], Tuple[bool, bytes]]
+SizeFunc = Callable[[Any], Tuple[bool, int]]
+# Type Definition:
+FileInfoTriple = Tuple[Location, ReaderFunc, SizeFunc]
+
+
 
 """
     Maybe type.

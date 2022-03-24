@@ -36,8 +36,11 @@ def get_utc_datetime_now():
 
 def get_now_str():
     now = get_utc_datetime_now()
-    now_str = "{}-{}-{}_{}-{}-{}".format(now.year, now.month, now.day, now.hour \
-    , now.minute, now.second)
+    #now_str = "{}-{}-{}_{}-{}-{}".format(now.year, now.month, now.day, now.hour \
+    
+    now_str = "{}.{}.{}_{}.{}.{}".format(now.year, now.month, \
+        now.day, now.hour, now.minute, now.second)
+    
     return now_str
 #
 
@@ -98,10 +101,35 @@ def get_file_size_in_bytes(path) -> MaybeInt:
     #    
 #
 
+
 def get_local_file_size(PATH: str) -> MaybeInt:
 	return get_file_size_in_bytes(PATH)
 #
 
+
+def filter_small_size(path: str, SMALLEST_SIZE):
+    #
+    try:
+        sz: MaybeInt = get_file_size_in_bytes(path)
+        if is_nothing(sz):
+            return False
+        #
+        
+        elif extract_some(sz) >= SMALLEST_SIZE:
+            return True
+        #
+        
+        else:
+            return False
+        #
+    #
+    
+    except: # TODO(armagan): Report/except when exception occurs.
+        return False
+    #
+#
+    
+    
 def get_nonzero_length_files(paths_arg: List[str]):
     paths: Set = set()
     # Set makes every location unique.
